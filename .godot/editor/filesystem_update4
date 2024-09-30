@@ -1,0 +1,15 @@
+res://World.tscn
+res://assets/main_theme.tres
+res://Game.tscn
+res://PatternMenu.tscn
+res://PatternContainer.tscn
+res://PatternChoice.tscn
+res://World.gd
+res://Game.gd
+res://CreativeToolbar.gd
+res://ToggleableButton.gd
+res://src/scenes/Game.tscn
+res://src/scenes/PatternChoice.tscn
+res://src/scenes/World.tscn
+res://src/scenes/PatternMenu.tscn
+res://src/scenes/PatternContainer.tscn

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Pattern" load_steps=2 format=3 uid="uid://bl4psjbi7ed8b"]
+
+[ext_resource type="Script" path="res://src/scripts/pattern.gd" id="1_hy3ym"]
+
+[resource]
+script = ExtResource("1_hy3ym")
+name = ""
+icon_column = 0
+total_animation_frames = 0
+type = 0
+width = 0
+height = 0
+cells = Array[Vector2i]([])

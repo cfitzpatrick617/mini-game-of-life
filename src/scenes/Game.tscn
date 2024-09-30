@@ -1,0 +1,134 @@
+[gd_scene load_steps=15 format=3 uid="uid://jc6onajpfooy"]
+
+[ext_resource type="Script" path="res://src/scripts/Game.gd" id="1_j764y"]
+[ext_resource type="PackedScene" uid="uid://ihrgq10biod1" path="res://src/scenes/World.tscn" id="2_j1cl4"]
+[ext_resource type="Texture2D" uid="uid://bsuucmb0jt2jp" path="res://assets/icons/pen_icon.png" id="3_mn572"]
+[ext_resource type="Script" path="res://src/scripts/ToggleableButton.gd" id="4_7f01h"]
+[ext_resource type="Texture2D" uid="uid://b3bt3kugcyk02" path="res://assets/icons/pen_icon_clicked.png" id="5_xy74f"]
+[ext_resource type="Texture2D" uid="uid://bm5ldn0p4lg00" path="res://assets/icons/rubber_icon.png" id="6_efuqj"]
+[ext_resource type="Texture2D" uid="uid://k8am4xellfo2" path="res://assets/icons/rubber_icon_clicked.png" id="7_64fui"]
+[ext_resource type="StyleBox" uid="uid://6hvakkt7sra2" path="res://assets/button_focused_style.tres" id="8_bwp3a"]
+[ext_resource type="Texture2D" uid="uid://blipwsi2doyjn" path="res://assets/icons/hammer_icon.png" id="9_8dwvk"]
+[ext_resource type="Texture2D" uid="uid://dkwf5xu2u6b56" path="res://assets/icons/clear_icon.png" id="10_ki11x"]
+[ext_resource type="Texture2D" uid="uid://ob30hajlwlfs" path="res://assets/icons/kill_icon.png" id="11_qh01x"]
+[ext_resource type="Texture2D" uid="uid://bk6pq2yv355w0" path="res://assets/icons/play_icon.png" id="12_e1tl7"]
+[ext_resource type="Texture2D" uid="uid://dv6tiyhxkyswp" path="res://assets/icons/pause_icon.png" id="13_ipp4o"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i2v6a"]
+bg_color = Color(0.366595, 0.366595, 0.366595, 1)
+
+[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "clear_button", "simulate_button", "kill_button", "world")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_j764y")
+gen_number_label = NodePath("PanelContainer/MarginContainer/SimulationTools/SimStats/GenNumber")
+cell_count_label = NodePath("PanelContainer/MarginContainer/SimulationTools/SimStats/CellCount")
+pen_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/PenButton")
+rubber_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/RubberButton")
+build_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/BuildButton")
+clear_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/ClearButton")
+simulate_button = NodePath("PanelContainer/MarginContainer/SimulationTools/SimulateButton")
+kill_button = NodePath("PanelContainer/MarginContainer/SimulationTools/KillButton")
+world = NodePath("SubViewportContainer/Window/World")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 4.0
+stretch = true
+
+[node name="Window" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(2, 2)
+render_target_update_mode = 4
+
+[node name="World" parent="SubViewportContainer/Window" instance=ExtResource("2_j1cl4")]
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_i2v6a")
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="CreativeToolbar" type="BoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 20
+
+[node name="PenButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+icon = ExtResource("3_mn572")
+flat = true
+script = ExtResource("4_7f01h")
+image_when_on = ExtResource("5_xy74f")
+image_when_off = ExtResource("3_mn572")
+
+[node name="RubberButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+icon = ExtResource("6_efuqj")
+flat = true
+script = ExtResource("4_7f01h")
+image_when_on = ExtResource("7_64fui")
+image_when_off = ExtResource("6_efuqj")
+
+[node name="BuildButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/focus = ExtResource("8_bwp3a")
+icon = ExtResource("9_8dwvk")
+flat = true
+
+[node name="ClearButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
+layout_mode = 2
+icon = ExtResource("10_ki11x")
+
+[node name="SimulationTools" type="HBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 20
+
+[node name="KillButton" type="Button" parent="PanelContainer/MarginContainer/SimulationTools"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+disabled = true
+icon = ExtResource("11_qh01x")
+flat = true
+
+[node name="SimulateButton" type="Button" parent="PanelContainer/MarginContainer/SimulationTools"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+icon = ExtResource("12_e1tl7")
+flat = true
+script = ExtResource("4_7f01h")
+image_when_on = ExtResource("13_ipp4o")
+image_when_off = ExtResource("12_e1tl7")
+
+[node name="SimStats" type="VBoxContainer" parent="PanelContainer/MarginContainer/SimulationTools"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="GenNumber" type="Label" parent="PanelContainer/MarginContainer/SimulationTools/SimStats"]
+layout_mode = 2
+text = "Generation: 0"
+
+[node name="CellCount" type="Label" parent="PanelContainer/MarginContainer/SimulationTools/SimStats"]
+layout_mode = 2
+text = "Cells Alive: 0"

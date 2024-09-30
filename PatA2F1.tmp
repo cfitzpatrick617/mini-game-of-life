@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://drg4b2go7vu3h"]
+
+[ext_resource type="Script" path="res://PatternMenu.gd" id="1_3hcix"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fo1h0"]
+bg_color = Color(0, 0, 0, 1)
+
+[node name="PatternMenu" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fo1h0")
+script = ExtResource("1_3hcix")
+
+[node name="Patterns" type="VBoxContainer" parent="."]
+layout_mode = 2

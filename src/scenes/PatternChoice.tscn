@@ -1,0 +1,61 @@
+[gd_scene load_steps=8 format=3 uid="uid://ctphpbia0dlpk"]
+
+[ext_resource type="Script" path="res://src/scripts/PatternChoice.gd" id="1_li2ta"]
+[ext_resource type="Texture2D" uid="uid://culj4ifnlq84a" path="res://assets/frames.png" id="2_qjbwh"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_47nbu"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8ki51"]
+resource_local_to_scene = true
+atlas = ExtResource("2_qjbwh")
+
+[sub_resource type="Animation" id="Animation_tiouj"]
+resource_name = "Hover"
+length = 0.4
+
+[sub_resource type="Animation" id="Animation_uqssr"]
+length = 0.001
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_4n42m"]
+resource_local_to_scene = true
+_data = {
+"Hover": SubResource("Animation_tiouj"),
+"RESET": SubResource("Animation_uqssr")
+}
+
+[node name="PatternChoice" type="PanelContainer" node_paths=PackedStringArray("pattern_icon", "pattern_name")]
+offset_top = 159.0
+offset_right = 128.0
+offset_bottom = 159.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_47nbu")
+script = ExtResource("1_li2ta")
+pattern_icon = NodePath("PatternChoice/PatternIcon")
+pattern_name = NodePath("PatternChoice/PatternName")
+
+[node name="PatternChoice" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PatternIcon" type="TextureRect" parent="PatternChoice"]
+layout_mode = 2
+texture = SubResource("AtlasTexture_8ki51")
+expand_mode = 5
+stretch_mode = 5
+
+[node name="PatternName" type="Label" parent="PatternChoice"]
+layout_mode = 2
+text = "N/A"
+horizontal_alignment = 1
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_4n42m")
+}
+
+[connection signal="focus_entered" from="." to="." method="_on_focus_entered"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

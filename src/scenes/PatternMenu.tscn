@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://drg4b2go7vu3h"]
+
+[ext_resource type="Script" path="res://src/scripts/PatternMenu.gd" id="1_tk6yp"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fo1h0"]
+bg_color = Color(0, 0, 0, 1)
+
+[node name="ScrollContainer" type="ScrollContainer"]
+offset_right = 1152.0
+offset_bottom = 648.0
+vertical_scroll_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_fo1h0")
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="PatternMenu" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+script = ExtResource("1_tk6yp")
