@@ -8,7 +8,6 @@ var animating := false
 
 
 func _ready():
-	print(pattern_icon.size / 2)
 	pattern_icon.pivot_offset = (pattern_icon.size / 2)
 
 
@@ -29,19 +28,10 @@ func _setup_hover_animation(frame_interval, total_frames):
 	hover_animation.setup_local_to_scene()
 	var anim_lib = $AnimationPlayer.get_animation_library("")
 	anim_lib.add_animation(pattern_resource.name, hover_animation)
-	
-
-func _on_mouse_entered():
-	if !animating:
-		start_hover_animation()
-
-
-func _on_mouse_exited():
-	if animating:
-		stop_hover_animation()
 
 
 func start_hover_animation():
+	print("hello")
 	animating = true
 	_hover()
 
@@ -58,4 +48,3 @@ func stop_hover_animation():
 	$AnimationPlayer.stop()
 	$AnimationPlayer.animation_finished.emit()
 	pattern_icon.texture.region = Rect2(0, pattern_resource.icon_column * 217, 217, 217)
-

@@ -2,8 +2,11 @@ class_name PatternMenu
 extends VBoxContainer
 
 
+signal selected(pattern_resource: Pattern)
+
+
 func _ready():
-	var dir = DirAccess.open("res://patterns")
+	var dir = DirAccess.open("res://src/patterns")
 	if dir:
 		dir.list_dir_begin()
 		var file_name = dir.get_next()
@@ -15,10 +18,11 @@ func _ready():
 
 
 func _create_pattern_container(category_name, pattern_resources):
-	const PATTERN_CONTAINER_SCENE = preload("res://PatternContainer.tscn")
+	const PATTERN_CONTAINER_SCENE = preload("res://src/scenes/PatternContainer.tscn")
 	var pattern_container = PATTERN_CONTAINER_SCENE.instantiate()
 	add_child(pattern_container)
 	pattern_container.add_patterns(category_name.capitalize(), pattern_resources)
+	pattern_container.selected.connect(func(pattern_resource): selected.emit(pattern_resource))
 
 
 func _load_patterns_from(dir_path):
@@ -29,3 +33,13 @@ func _load_patterns_from(dir_path):
 		if ResourceLoader.exists(dir_path + "/" + res_path, "Pattern"):
 			pattern_resources.append(ResourceLoader.load(dir_path + "/" + res_path))
 	return pattern_resources
+
+
+func start_animations():
+	for child in get_children():
+		child.start_animations()
+
+
+func stop_animations():
+	for child in get_children():
+		child.stop_animations()

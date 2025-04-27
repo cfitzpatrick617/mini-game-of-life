@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://jc6onajpfooy"]
+[gd_scene load_steps=17 format=3 uid="uid://jc6onajpfooy"]
 
 [ext_resource type="Script" path="res://src/scripts/Game.gd" id="1_j764y"]
 [ext_resource type="PackedScene" uid="uid://ihrgq10biod1" path="res://src/scenes/World.tscn" id="2_j1cl4"]
@@ -11,12 +11,9 @@
 [ext_resource type="StyleBox" uid="uid://6hvakkt7sra2" path="res://assets/button_focused_style.tres" id="8_bwp3a"]
 [ext_resource type="Texture2D" uid="uid://blipwsi2doyjn" path="res://assets/icons/hammer_icon.png" id="9_8dwvk"]
 [ext_resource type="Texture2D" uid="uid://dkwf5xu2u6b56" path="res://assets/icons/clear_icon.png" id="10_ki11x"]
-[ext_resource type="Texture2D" uid="uid://dq55fuid6u0xg" path="res://assets/icons/hammer_icon_clicked.png" id="11_l3b7l"]
 [ext_resource type="Texture2D" uid="uid://ob30hajlwlfs" path="res://assets/icons/kill_icon.png" id="11_qh01x"]
 [ext_resource type="Texture2D" uid="uid://bk6pq2yv355w0" path="res://assets/icons/play_icon.png" id="12_e1tl7"]
-[ext_resource type="Texture2D" uid="uid://bvome4wbnqd7d" path="res://assets/icons/undo_icon.png" id="12_scoxh"]
 [ext_resource type="Texture2D" uid="uid://dv6tiyhxkyswp" path="res://assets/icons/pause_icon.png" id="13_ipp4o"]
-[ext_resource type="Texture2D" uid="uid://wd3v6jr3api2" path="res://assets/icons/redo_icon.png" id="13_wpj57"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3vuol"]
 bg_color = Color(0, 0, 0, 1)
@@ -24,12 +21,7 @@ bg_color = Color(0, 0, 0, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i2v6a"]
 bg_color = Color(0.366595, 0.366595, 0.366595, 1)
 
-[sub_resource type="InputEventKey" id="InputEventKey_5iawa"]
-
-[sub_resource type="Shortcut" id="Shortcut_m1bxv"]
-events = [SubResource("InputEventKey_5iawa")]
-
-[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "undo_button", "redo_button", "clear_button", "simulate_button", "kill_button", "world_container", "world")]
+[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "clear_button", "simulate_button", "kill_button", "world")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -44,16 +36,12 @@ cell_count_label = NodePath("PanelContainer/MarginContainer/SimulationTools/SimS
 pen_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/PenButton")
 rubber_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/RubberButton")
 build_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/BuildButton")
-undo_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/UndoButton")
-redo_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/RedoButton")
 clear_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/ClearButton")
 simulate_button = NodePath("PanelContainer/MarginContainer/SimulationTools/SimulateButton")
 kill_button = NodePath("PanelContainer/MarginContainer/SimulationTools/KillButton")
-world_container = NodePath("WorldContainer")
-world = NodePath("WorldContainer/Window/World")
+world = NodePath("SubViewportContainer/Window/World")
 
 [node name="Overlay" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Overlay"]
 anchors_preset = 15
@@ -81,18 +69,18 @@ layout_mode = 2
 theme_override_constants/separation = 10
 script = ExtResource("2_makdl")
 
-[node name="WorldContainer" type="SubViewportContainer" parent="."]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 4.0
 stretch = true
 
-[node name="Window" type="SubViewport" parent="WorldContainer"]
+[node name="Window" type="SubViewport" parent="SubViewportContainer"]
 handle_input_locally = false
 size = Vector2i(1152, 515)
 render_target_update_mode = 4
 
-[node name="World" parent="WorldContainer/Window" instance=ExtResource("2_j1cl4")]
+[node name="World" parent="SubViewportContainer/Window" instance=ExtResource("2_j1cl4")]
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 2
@@ -136,19 +124,6 @@ size_flags_vertical = 4
 theme_override_styles/focus = ExtResource("8_bwp3a")
 icon = ExtResource("9_8dwvk")
 flat = true
-script = ExtResource("4_7f01h")
-image_when_on = ExtResource("11_l3b7l")
-image_when_off = ExtResource("9_8dwvk")
-
-[node name="UndoButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
-layout_mode = 2
-shortcut = SubResource("Shortcut_m1bxv")
-icon = ExtResource("12_scoxh")
-
-[node name="RedoButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
-layout_mode = 2
-shortcut = SubResource("Shortcut_m1bxv")
-icon = ExtResource("13_wpj57")
 
 [node name="ClearButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
 layout_mode = 2

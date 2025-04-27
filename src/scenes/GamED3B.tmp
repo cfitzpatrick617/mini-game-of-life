@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://jc6onajpfooy"]
+[gd_scene load_steps=21 format=3 uid="uid://jc6onajpfooy"]
 
 [ext_resource type="Script" path="res://src/scripts/Game.gd" id="1_j764y"]
 [ext_resource type="PackedScene" uid="uid://ihrgq10biod1" path="res://src/scenes/World.tscn" id="2_j1cl4"]
@@ -16,7 +16,6 @@
 [ext_resource type="Texture2D" uid="uid://bk6pq2yv355w0" path="res://assets/icons/play_icon.png" id="12_e1tl7"]
 [ext_resource type="Texture2D" uid="uid://bvome4wbnqd7d" path="res://assets/icons/undo_icon.png" id="12_scoxh"]
 [ext_resource type="Texture2D" uid="uid://dv6tiyhxkyswp" path="res://assets/icons/pause_icon.png" id="13_ipp4o"]
-[ext_resource type="Texture2D" uid="uid://wd3v6jr3api2" path="res://assets/icons/redo_icon.png" id="13_wpj57"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3vuol"]
 bg_color = Color(0, 0, 0, 1)
@@ -29,7 +28,7 @@ bg_color = Color(0.366595, 0.366595, 0.366595, 1)
 [sub_resource type="Shortcut" id="Shortcut_m1bxv"]
 events = [SubResource("InputEventKey_5iawa")]
 
-[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "undo_button", "redo_button", "clear_button", "simulate_button", "kill_button", "world_container", "world")]
+[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "undo_button", "clear_button", "simulate_button", "kill_button", "world_container", "world")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -45,7 +44,6 @@ pen_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/PenButton"
 rubber_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/RubberButton")
 build_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/BuildButton")
 undo_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/UndoButton")
-redo_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/RedoButton")
 clear_button = NodePath("PanelContainer/MarginContainer/CreativeToolbar/ClearButton")
 simulate_button = NodePath("PanelContainer/MarginContainer/SimulationTools/SimulateButton")
 kill_button = NodePath("PanelContainer/MarginContainer/SimulationTools/KillButton")
@@ -144,11 +142,6 @@ image_when_off = ExtResource("9_8dwvk")
 layout_mode = 2
 shortcut = SubResource("Shortcut_m1bxv")
 icon = ExtResource("12_scoxh")
-
-[node name="RedoButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
-layout_mode = 2
-shortcut = SubResource("Shortcut_m1bxv")
-icon = ExtResource("13_wpj57")
 
 [node name="ClearButton" type="Button" parent="PanelContainer/MarginContainer/CreativeToolbar"]
 layout_mode = 2

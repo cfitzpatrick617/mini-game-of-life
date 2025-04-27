@@ -5,14 +5,19 @@ enum Mode{DRAWING, ERASING, SIMULATING}
 
 signal cell_count_changed(new_cell_count)
 signal tick_completed(current_gen_number)
+signal world_state_transitioned()
 
+var current_pattern: Pattern
 var mode: Mode
 var default_drawing_mode: Mode = Mode.DRAWING
 var simulation_speed: int = 10
 var gen_number: int = 0
 var seed: Array = []
 var current_generation: Array = []
-var hovered_cell: Vector2i
+var hovered_cells: Array = []
+var undo_stack: Array = []
+var redo_stack: Array = []
+var unstored_changes: Array = []
 
 
 func start_simulation() -> void:
@@ -38,7 +43,7 @@ func _simulate(last_time) -> void:
 func _complete_tick() -> void:
 	gen_number += 1
 	var next_generation = _calculate_next_gen() # update game
-	_draw_cells(next_generation) # draw update
+	_refresh_cells(next_generation) # draw update
 	current_generation = next_generation
 	tick_completed.emit(gen_number)
 
@@ -51,17 +56,44 @@ func resume_simulation() -> void:
 	$TickTimer.paused = false
 
 
+func can_undo() -> bool:
+	return !undo_stack.is_empty()
+
+func undo() -> void:
+	if !undo_stack.is_empty():
+		var operation = undo_stack.pop_back()
+		if operation[0] == Mode.DRAWING:
+			_erase_cells(operation[1])
+		else:
+			_draw_cells(operation[1])
+		redo_stack.append(operation)
+		world_state_transitioned.emit()
+
+
+func can_redo() -> bool:
+	return !redo_stack.is_empty()
+
+
+func redo() -> void:
+	if !redo_stack.is_empty():
+		var operation = redo_stack.pop_back()
+		if operation[0] == Mode.DRAWING:
+			_draw_cells(operation[1])
+		else:
+			_erase_cells(operation[1])
+		undo_stack.append(operation)
+		world_state_transitioned.emit()
+
+
 func reset(reload_seed: bool=true) -> void:
 	mode = default_drawing_mode
 	gen_number = 0
 	if reload_seed:
 		current_generation = seed
-		_draw_cells(seed)
+		_refresh_cells(seed)
 	else:
 		_clear_world()
-	# ensure timer is not paused for the next simulation
-	if is_paused():
-		$TickTimer.paused = false
+	$TickTimer.paused = false # ensure timer is not paused for the next simulation
 
 
 func get_gen_number() -> int:
@@ -77,10 +109,12 @@ func is_simulating() -> bool:
 
 
 func set_to_drawing_mode() -> void:
+	current_pattern = null
 	mode = Mode.DRAWING
 
 
 func set_to_erasing_mode() -> void:
+	current_pattern = null
 	mode = Mode.ERASING
 
 
@@ -115,7 +149,7 @@ func _calculate_next_gen() -> Array:
 	return next_generation
 
 
-func _draw_cells(cells) -> void:
+func _refresh_cells(cells) -> void:
 	clear_layer(1)
 	for cell in cells:
 		set_cell(1, cell, 0, Vector2i(0, 0))
@@ -123,10 +157,14 @@ func _draw_cells(cells) -> void:
 
 
 func _clear_world() -> void:
-	clear_layer(1)
-	seed = []
-	current_generation = []
-	cell_count_changed.emit(0)
+	if !current_generation.is_empty():
+		redo_stack = []
+		undo_stack.append([Mode.ERASING, current_generation])
+		world_state_transitioned.emit()
+		clear_layer(1)
+		seed = []
+		current_generation = []
+		cell_count_changed.emit(0)
 
 
 func change_simulation_speed(new_simulation_speed) -> void:
@@ -141,22 +179,73 @@ func _input(event) -> void:
 	# detect mouse activity during creative phase
 	if mode != Mode.SIMULATING:
 		detect_world_changes()
+		if event.is_action_released("click") and !unstored_changes.is_empty():
+			redo_stack = []
+			undo_stack.append([mode, unstored_changes])
+			unstored_changes = []
+			world_state_transitioned.emit()
+
+
+func set_current_pattern(pattern: Pattern):
+	current_pattern = pattern
 
 
 func detect_world_changes() -> void:
 	var current_cell = local_to_map(get_local_mouse_position())
-	if !Input.is_action_just_pressed("click"): # hovering not clicking
-		if hovered_cell not in current_generation and current_cell != hovered_cell:
-			erase_cell(1, hovered_cell)
-		if current_cell not in current_generation:
-			set_cell(1, current_cell, 0, Vector2(2, 0))
-			hovered_cell = current_cell
-	elif mode == Mode.DRAWING and current_cell not in current_generation:
-		set_cell(1, current_cell, 0, Vector2i(0, 0))
-		current_generation.append(current_cell)
-		cell_count_changed.emit(current_generation.size())
-	elif mode == Mode.ERASING and current_cell in current_generation:
-		erase_cell(1, hovered_cell)
-		current_generation.erase(current_cell)
-		cell_count_changed.emit(current_generation.size())
-		
+	var cells_to_draw = []
+	if !current_pattern:
+		cells_to_draw.append(current_cell)
+	else:
+		for pos in current_pattern.cells:
+			cells_to_draw.append(current_cell + pos)
+	# hovering not clicking
+	if !Input.is_action_pressed("click"):
+		_hover_cells(cells_to_draw)
+	# if we have detected a click
+	# draws a new cell that is not already drawn
+	elif mode == Mode.DRAWING:
+		unstored_changes.append_array(_draw_cells(cells_to_draw))
+	# erases cell that is already drawn
+	elif mode == Mode.ERASING:
+		unstored_changes.append_array(_erase_cells([current_cell]))
+		_hover_cells([current_cell])
+
+
+func _draw_cells(cells) -> Array:
+	var cells_drawn = []
+	for cell in cells:
+		if cell not in current_generation:
+			set_cell(1, cell, 0, Vector2i(0, 0))
+			cells_drawn.append(cell)
+			current_generation.append(cell)
+	cell_count_changed.emit(current_generation.size())
+	return cells_drawn
+
+
+func _erase_cells(cells) -> Array:
+	var cells_erased = []
+	for cell in cells:
+		if cell in current_generation:
+			erase_cell(1, cell)
+			current_generation.erase(cell)
+			cells_erased.append(cell)
+	cell_count_changed.emit(current_generation.size())
+	return cells_erased
+
+
+func _hover_cells(cells_to_hover):
+	for cell in hovered_cells:
+		if cell not in current_generation:
+			if cell not in cells_to_hover:
+				erase_cell(1, cell)
+	var new_hovered_cells = []
+	for cell in cells_to_hover:
+		if cell not in current_generation:
+			new_hovered_cells.append(cell)
+			if cell not in hovered_cells:
+				set_cell(1, cell, 0, Vector2(2, 0))
+	hovered_cells = new_hovered_cells
+
+
+func force_unhover():
+	_hover_cells([])
