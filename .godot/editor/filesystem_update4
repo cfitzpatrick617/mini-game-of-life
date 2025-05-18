@@ -1,14 +1,8 @@
 res://src/scenes/World.tscn
 res://assets/main_theme.tres
+res://src/scripts/WorldV3.gd
 res://src/scenes/Game.tscn
-res://src/scenes/PatternMenu.tscn
 res://src/scenes/PatternContainer.tscn
 res://src/scenes/PatternChoice.tscn
 res://screen_manager.tscn
-res://ScreenManager.gd
 res://src/scripts/Game.gd
-res://src/scripts/PatternMenu.gd
-res://src/scripts/PatternContainer.gd
-res://src/scripts/PatternChoice.gd
-res://src/scripts/World.gd
-res://src/patterns/oscillators/blinker.tres

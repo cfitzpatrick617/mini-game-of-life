@@ -189,3 +189,5 @@ text = "Generation: 0"
 [node name="CellCount" type="Label" parent="PanelContainer/MarginContainer/SimulationTools/SimStats"]
 layout_mode = 2
 text = "Cells Alive: 0"
+
+[connection signal="focus_entered" from="WorldContainer" to="." method="_on_world_container_focus_entered"]

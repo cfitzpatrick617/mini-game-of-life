@@ -76,7 +76,7 @@ func _enable_erasing() -> void:
 
 func _switch_simulation_state() -> void:
 	# if simulation has not been started
-	if !world.is_simulating() and !world.is_paused():
+	if !world.is_simulating():
 		# disable all creative buttons (drawing, erasing, clearing)
 		for button in inactive_during_sim:
 			if button is ToggleableButton:

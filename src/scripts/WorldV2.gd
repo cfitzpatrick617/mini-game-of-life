@@ -1,4 +1,4 @@
-class_name World
+class_name WorldV2
 extends TileMap
 ## Class representing the world in which cells can be drawn and where simulations take place
 
@@ -13,18 +13,19 @@ var mode: Mode
 var default_drawing_mode: Mode = Mode.DRAWING
 var simulation_speed: int = 10
 var gen_number: int = 0
-var seed: Array = [] ## Starting set of cells for a simulation
-var current_generation: Array = [] ## The current generation of a simulation
+var seed = {} ## Starting set of cells for a simulation
+var cell_count = 0
 var hovered_cells: Array = [] ## Cells currently being hovered over by the mouse
 var undo_stack: Array = []
 var redo_stack: Array = []
 var unstored_changes: Array = []
 var last_mouse_pos: Vector2i = Vector2i(-1, -1)
+var map = {}
 
 
 func start_simulation() -> void: ## Starts a simulation
 	mode = Mode.SIMULATING
-	seed = current_generation # make the current canvas the seed
+	seed = map
 	await get_tree().process_frame # ensure that all editing has been completed before simulation
 	_simulate(Time.get_unix_time_from_system())
 
@@ -62,95 +63,78 @@ func _simulate(last_time) -> void: ## Recursive algorithm to simulate
 		# account for processing time for consistent spacing
 		$TickTimer.wait_time = ((1.0 - time_taken) / simulation_speed)
 		$TickTimer.start()
-		#await $TickTimer.timeout # wait depending on the simulation speed
+		await $TickTimer.timeout # wait depending on the simulation speed
 		_simulate(this_time) # repeat simulation until the user stops it
 	
 
 func _complete_tick() -> void: ## Enforce rules and move to the next generation
 	gen_number += 1
-	var next_generation = _calculate_next_gen()
-	_refresh_cells(next_generation) # draw update
-	current_generation = next_generation
+	_calculate_next_gen()
+	_refresh_cells() # draw update
 	tick_completed.emit(gen_number)
 
 
-func _calculate_next_gen() -> Array:
+func _calculate_next_gen() -> void:
 	var this_time = Time.get_unix_time_from_system()
-	var next_generation = []
+	var new_map = {}
+	# deal with live cells
+	for cell in map.keys():
+		var val = map[cell]
+		if val != 0:
+			if val & 1 == 1 and ((val >> 1) & 15 != 2 and (val >> 1) & 15 != 3):
+				_update_cell_in_map(new_map, cell, 0)
+			elif val & 1 == 0 and (val >> 1) & 15 == 3:
+				_update_cell_in_map(new_map, cell, 1)
+	map = new_map
+	var next_time = Time.get_unix_time_from_system()
+
+
+func _update_cell_in_map(new_map, cell, new_state):
 	const DIRECTIONS = [
 		Vector2i(-1, 1), Vector2i.UP, Vector2i(1, 1),
 		Vector2i.LEFT, Vector2i.RIGHT,
 		Vector2i(-1, -1), Vector2i.DOWN, Vector2i(1, -1),
 	]
-	var potential_births = {}
-	var alive_neighbour_count
-	# deal with live cells
-	for cell in current_generation:
-		alive_neighbour_count = 0
+	if !map.has(cell):
+		new_map[cell] = 0
+	if map[cell] == new_state:
+		return
+	if new_state == 0:
+		new_map[cell] = 0
 		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
+			if !map.has(cell + direction):
+				new_map[cell + direction] = 0
 			else:
-				potential_births[cell + direction] = null # mark all dead cells around live cells as potential births
-		# if a live cell has two or three neighbours, it lives, otherwise it dies (is not added to next gen)
-		if alive_neighbour_count == 2 or alive_neighbour_count == 3:
-			next_generation.append(cell)
-	# deal with potential births
-	for cell in potential_births.keys():
-		alive_neighbour_count = 0
+				var val = map[cell + direction]
+				var middle = (val >> 1) & 15
+				middle -= 1
+				var cleared = val & ~(15 << 1)    
+				new_map[cell + direction] = max(cleared | (middle << 1), 0)
+	else:
+		new_map[cell] = map[cell] | 1
 		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-		if alive_neighbour_count == 3: ## if a dead cell has 3 neighbours, it comes to life
-			next_generation.append(cell)
-	var next_time = Time.get_unix_time_from_system()
-	print(next_time - this_time)
-	return next_generation
-
-
-func _calculate_next_gen_byte() -> Array:
-	var this_time = Time.get_unix_time_from_system()
-	var next_generation = []
-	const DIRECTIONS = [
-		Vector2i(-1, 1), Vector2i.UP, Vector2i(1, 1),
-		Vector2i.LEFT, Vector2i.RIGHT,
-		Vector2i(-1, -1), Vector2i.DOWN, Vector2i(1, -1),
-	]
-	var potential_births = {}
-	var alive_neighbour_count
-	# deal with live cells
-	for cell in current_generation:
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
+			if !map.has(cell + direction):
+				new_map[cell + direction] = 2
 			else:
-				potential_births[cell + direction] = null # mark all dead cells around live cells as potential births
-		# if a live cell has two or three neighbours, it lives, otherwise it dies (is not added to next gen)
-		if alive_neighbour_count == 2 or alive_neighbour_count == 3:
-			next_generation.append(cell)
-	# deal with potential births
-	for cell in potential_births.keys():
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-		if alive_neighbour_count == 3: ## if a dead cell has 3 neighbours, it comes to life
-			next_generation.append(cell)
-	var next_time = Time.get_unix_time_from_system()
-	print(next_time - this_time)
-	return next_generation
+				var val = map[cell + direction]
+				var middle = (val >> 1) & 15
+				middle += 1  
+				var cleared = val & ~(15 << 1) 
+				new_map[cell + direction] = min(cleared | (middle << 1), 8) 
 
 
 func get_gen_number() -> int:
 	return gen_number
 
 
-func _refresh_cells(cells) -> void:
+func _refresh_cells() -> void:
 	clear_layer(1)
-	for cell in cells:
-		set_cell(1, cell, 0, Vector2i(0, 0))
-	cell_count_changed.emit(cells.size())
+	var alive_count = 0
+	for cell in map.keys():
+		if map[cell] != 0:
+			set_cell(1, cell, 0, Vector2i(0, 0))
+			alive_count += 1
+	cell_count_changed.emit(alive_count)
 
 
 func set_to_drawing_mode() -> void:
@@ -175,7 +159,7 @@ func _input(event) -> void:
 			last_mouse_pos = Vector2(-1, -1)
 			if !unstored_changes.is_empty():
 				redo_stack = []
-				undo_stack.append([mode, unstored_changes])
+				undo_stack.append(map.duplicate(true))
 				unstored_changes = []
 				world_state_transitioned.emit()
 
@@ -246,33 +230,38 @@ func _get_smoothed_mouse_path(last_mouse_pos: Vector2i, current_mouse_pos: Vecto
 func _draw_cells(cells) -> Array:
 	var cells_drawn = []
 	for cell in cells:
-		if cell not in current_generation:
+		if !map.has(cell) or map[cell] & 1 != 1:
 			set_cell(1, cell, 0, Vector2i(0, 0))
-			current_generation.append(cell)
+			_update_cell_in_map(map, cell, 1)
 			cells_drawn.append(cell)
-	cell_count_changed.emit(current_generation.size())
+	change_cell_count(cells_drawn.size())
 	return cells_drawn
+
+
+func change_cell_count(by: int):
+	cell_count += by
+	cell_count_changed.emit(cell_count)
 
 
 func _erase_cells(cells) -> Array:
 	var cells_erased = []
 	for cell in cells:
-		if cell in current_generation:
+		if map.has(cell) and map[cell] & 1 == 1:
 			erase_cell(1, cell)
-			current_generation.erase(cell)
+			_update_cell_in_map(map, cell, 0)
 			cells_erased.append(cell)
-	cell_count_changed.emit(current_generation.size())
+	change_cell_count(-cells_erased.size())
 	return cells_erased
 
 
 func _hover_cells(cells_to_hover):
 	for cell in hovered_cells:
-		if cell not in current_generation:
+		if !map.has(cell) or map[cell] == 0:
 			if cell not in cells_to_hover:
 				erase_cell(1, cell)
 	var new_hovered_cells = []
 	for cell in cells_to_hover:
-		if cell not in current_generation:
+		if !map.has(cell) or map[cell] == 0:
 			new_hovered_cells.append(cell)
 			if cell not in hovered_cells:
 				set_cell(1, cell, 0, Vector2(2, 0))
@@ -289,12 +278,10 @@ func can_undo() -> bool:
 
 func undo() -> void:
 	if !undo_stack.is_empty():
-		var operation = undo_stack.pop_back()
-		if operation[0] == Mode.DRAWING:
-			_erase_cells(operation[1])
-		else:
-			_draw_cells(operation[1])
-		redo_stack.append(operation)
+		var undo_map = undo_stack.pop_back()
+		redo_stack.append(map.duplicate(true))
+		map = undo_map
+		_refresh_cells()
 		world_state_transitioned.emit()
 
 
@@ -304,12 +291,10 @@ func can_redo() -> bool:
 
 func redo() -> void:
 	if !redo_stack.is_empty():
-		var operation = redo_stack.pop_back()
-		if operation[0] == Mode.DRAWING:
-			_draw_cells(operation[1])
-		else:
-			_erase_cells(operation[1])
-		undo_stack.append(operation)
+		var redo_map = redo_stack.pop_back()
+		undo_stack.append(map.duplicate(true))
+		map = redo_map
+		_refresh_cells()
 		world_state_transitioned.emit()
 
 
@@ -317,19 +302,18 @@ func reset(reload_seed: bool=true) -> void:
 	mode = default_drawing_mode
 	gen_number = 0
 	if reload_seed:
-		current_generation = seed
-		_refresh_cells(seed)
+		map = seed
+		_refresh_cells()
 	else:
 		_clear_world()
 	$TickTimer.paused = false # ensure timer is not paused for the next simulation
 
 
 func _clear_world() -> void:
-	if !current_generation.is_empty():
-		redo_stack = []
-		undo_stack.append([Mode.ERASING, current_generation])
-		world_state_transitioned.emit()
-		clear_layer(1)
-		seed = []
-		current_generation = []
-		cell_count_changed.emit(0)
+	redo_stack = []
+	undo_stack.append(map)
+	map = {}
+	world_state_transitioned.emit()
+	clear_layer(1)
+	seed = []
+	change_cell_count(-cell_count)

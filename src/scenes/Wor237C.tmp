@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://ihrgq10biod1"]
+
+[ext_resource type="Texture2D" uid="uid://bjygjncqiwi6r" path="res://assets/cells.png" id="1_320g2"]
+[ext_resource type="Script" path="res://src/scripts/WorldV2.gd" id="2_x8du4"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_sle6m"]
+texture = ExtResource("1_320g2")
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_ku2o8"]
+sources/0 = SubResource("TileSetAtlasSource_sle6m")
+
+[node name="World" type="TileMap"]
+tile_set = SubResource("TileSet_ku2o8")
+format = 2
+layer_0/name = "grid"
+layer_0/tile_data = PackedInt32Array(-720896, 65536, 0, -655360, 65536, 0, -589824, 65536, 0, -720895, 65536, 0, -655359, 65536, 0, -589823, 65536, 0, -655361, 65536, 0, -589825, 65536, 0, -524289, 65536, 0)
+layer_1/name = "cells"
+layer_1/tile_data = PackedInt32Array()
+script = ExtResource("2_x8du4")
+
+[node name="TickTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(0.5, 0.5)

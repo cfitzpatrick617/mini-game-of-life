@@ -8,138 +8,116 @@ signal cell_count_changed(new_cell_count) ## Emitted when the cell count changes
 signal tick_completed(current_gen_number) ## Emitted when a generation tick completes
 signal world_state_transitioned() ## Emitted after an undo or redo command
 
+var rd: RenderingDevice
+var shader: RID
 var current_pattern: Pattern ## Current build pattern
 var mode: Mode
-var default_drawing_mode: Mode = Mode.DRAWING
-var simulation_speed: int = 10
+var default_drawing_mode := Mode.DRAWING
+var time_between_gens := 0.1
+var cooldown_timer: float = 0
+var current_generation := PackedInt32Array()
+var cells_alive: int = 0
 var gen_number: int = 0
-var seed: Array = [] ## Starting set of cells for a simulation
-var current_generation: Array = [] ## The current generation of a simulation
-var hovered_cells: Array = [] ## Cells currently being hovered over by the mouse
-var undo_stack: Array = []
-var redo_stack: Array = []
-var unstored_changes: Array = []
-var last_mouse_pos: Vector2i = Vector2i(-1, -1)
+var seed := [] ## Starting set of cells for a simulation
+var hovered_cells := [] ## Cells currently being hovered over by the mouse
+var undo_stack := []
+var redo_stack := []
+var unstored_changes := []
+var last_mouse_pos := Vector2i(-1, -1)
 
+
+func _ready():
+	# create compute shader for faster generation
+	rd = RenderingServer.create_local_rendering_device()
+	var shader_file := load("res://src/scripts/compute_shader_grid.glsl")
+	var shader_spirv: RDShaderSPIRV = shader_file.get_spirv()
+	shader = rd.shader_create_from_spirv(shader_spirv)
+	# initialise empty grid
+	for n in range(get_used_rect().size.x * get_used_rect().size.y):
+		current_generation.append(0)
+	set_process(false) # ensure simulation is off
+	
 
 func start_simulation() -> void: ## Starts a simulation
 	mode = Mode.SIMULATING
 	seed = current_generation # make the current canvas the seed
 	await get_tree().process_frame # ensure that all editing has been completed before simulation
-	_simulate(Time.get_unix_time_from_system())
+	set_process(true)
 
 
 func is_paused() -> bool:
-	return $TickTimer.paused
+	return mode == Mode.SIMULATING and !is_processing()
 
 
 func pause_simulation() -> void:
-	$TickTimer.paused = true
+	set_process(false)
 
 
 func resume_simulation() -> void:
-	$TickTimer.paused = false
+	set_process(true)
 
 
 func is_simulating() -> bool:
 	return mode == Mode.SIMULATING
 
 
-func change_simulation_speed(new_simulation_speed) -> void:
-	# prevent invalid speed
-	if typeof(new_simulation_speed) == TYPE_INT and new_simulation_speed >= 1:
-		if !$TickTimer.is_stopped():
-			$TickTimer.time_left = 0.06 # lowest reliable time possible
-		simulation_speed = new_simulation_speed
+func change_time_between_gens(new_time_between_gens: float) -> void:
+	time_between_gens = new_time_between_gens
 
 
-func _simulate(last_time) -> void: ## Recursive algorithm to simulate
-	var this_time = Time.get_unix_time_from_system()
-	if mode == Mode.SIMULATING: # base case that ends recursive algorithm when the simulation is stopped
-		var time_before_tick = Time.get_unix_time_from_system()
+func _process(delta):
+	cooldown_timer += delta
+	if cooldown_timer > time_between_gens:
 		_complete_tick()
-		var time_taken = Time.get_unix_time_from_system() - time_before_tick
-		# account for processing time for consistent spacing
-		$TickTimer.wait_time = ((1.0 - time_taken) / simulation_speed)
-		$TickTimer.start()
-		#await $TickTimer.timeout # wait depending on the simulation speed
-		_simulate(this_time) # repeat simulation until the user stops it
+		cooldown_timer = 0
+		
 	
 
 func _complete_tick() -> void: ## Enforce rules and move to the next generation
-	gen_number += 1
 	var next_generation = _calculate_next_gen()
 	_refresh_cells(next_generation) # draw update
-	current_generation = next_generation
+	gen_number += 1
 	tick_completed.emit(gen_number)
 
 
 func _calculate_next_gen() -> Array:
-	var this_time = Time.get_unix_time_from_system()
-	var next_generation = []
-	const DIRECTIONS = [
-		Vector2i(-1, 1), Vector2i.UP, Vector2i(1, 1),
-		Vector2i.LEFT, Vector2i.RIGHT,
-		Vector2i(-1, -1), Vector2i.DOWN, Vector2i(1, -1),
-	]
-	var potential_births = {}
-	var alive_neighbour_count
-	# deal with live cells
-	for cell in current_generation:
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-			else:
-				potential_births[cell + direction] = null # mark all dead cells around live cells as potential births
-		# if a live cell has two or three neighbours, it lives, otherwise it dies (is not added to next gen)
-		if alive_neighbour_count == 2 or alive_neighbour_count == 3:
-			next_generation.append(cell)
-	# deal with potential births
-	for cell in potential_births.keys():
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-		if alive_neighbour_count == 3: ## if a dead cell has 3 neighbours, it comes to life
-			next_generation.append(cell)
-	var next_time = Time.get_unix_time_from_system()
-	print(next_time - this_time)
-	return next_generation
-
-
-func _calculate_next_gen_byte() -> Array:
-	var this_time = Time.get_unix_time_from_system()
-	var next_generation = []
-	const DIRECTIONS = [
-		Vector2i(-1, 1), Vector2i.UP, Vector2i(1, 1),
-		Vector2i.LEFT, Vector2i.RIGHT,
-		Vector2i(-1, -1), Vector2i.DOWN, Vector2i(1, -1),
-	]
-	var potential_births = {}
-	var alive_neighbour_count
-	# deal with live cells
-	for cell in current_generation:
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-			else:
-				potential_births[cell + direction] = null # mark all dead cells around live cells as potential births
-		# if a live cell has two or three neighbours, it lives, otherwise it dies (is not added to next gen)
-		if alive_neighbour_count == 2 or alive_neighbour_count == 3:
-			next_generation.append(cell)
-	# deal with potential births
-	for cell in potential_births.keys():
-		alive_neighbour_count = 0
-		for direction in DIRECTIONS:
-			if cell + direction in current_generation:
-				alive_neighbour_count += 1
-		if alive_neighbour_count == 3: ## if a dead cell has 3 neighbours, it comes to life
-			next_generation.append(cell)
-	var next_time = Time.get_unix_time_from_system()
-	print(next_time - this_time)
-	return next_generation
+	var byte_map := current_generation.to_byte_array()
+	# double buffer solution where current gen is read from and next gen is written to
+	var current_buffer = rd.storage_buffer_create(byte_map.size(), byte_map)
+	var next_buffer = rd.storage_buffer_create(byte_map.size(), byte_map)
+	var current_uniform := RDUniform.new()
+	current_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	current_uniform.binding = 0
+	current_uniform.add_id(current_buffer)
+	var current_uniform_set = rd.uniform_set_create([current_uniform], shader, 0) 
+	var next_uniform := RDUniform.new()
+	next_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	next_uniform.binding = 0 
+	next_uniform.add_id(next_buffer)
+	var next_uniform_set = rd.uniform_set_create([next_uniform], shader, 1) 
+	# push width and height constants
+	var parameters := PackedByteArray()
+	parameters.resize(16)
+	parameters.encode_s32(0, get_used_rect().size.x)
+	parameters.encode_s32(4, get_used_rect().size.y)
+	# create new compute pipeline
+	var pipeline = rd.compute_pipeline_create(shader)
+	var compute_list = rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, current_uniform_set, 0)
+	rd.compute_list_bind_uniform_set(compute_list, next_uniform_set, 1)
+	rd.compute_list_set_push_constant(compute_list, parameters, parameters.size())
+	rd.compute_list_dispatch(compute_list, current_generation.size(), 1, 1)
+	rd.compute_list_end()
+	# submit and await results
+	rd.submit()
+	rd.sync()
+	var output_bytes = rd.buffer_get_data(next_buffer)
+	# manually free memory to prevent leaks
+	rd.free_rid(pipeline)
+	rd.free_rid(current_buffer)
+	rd.free_rid(next_buffer)
+	return output_bytes.to_int32_array()
 
 
 func get_gen_number() -> int:
@@ -148,9 +126,13 @@ func get_gen_number() -> int:
 
 func _refresh_cells(cells) -> void:
 	clear_layer(1)
-	for cell in cells:
-		set_cell(1, cell, 0, Vector2i(0, 0))
-	cell_count_changed.emit(cells.size())
+	current_generation = cells
+	cells_alive = 0
+	for n in range(cells.size()): # for every cell
+		if current_generation[n] == 1:
+			cells_alive += 1
+			set_cell(1, Vector2i(n % get_used_rect().size.x, n / get_used_rect().size.x), 0, Vector2i(0, 0))
+	cell_count_changed.emit(cells_alive)
 
 
 func set_to_drawing_mode() -> void:
@@ -171,9 +153,9 @@ func _input(event) -> void:
 	# detect mouse activity during creative phase
 	if mode != Mode.SIMULATING:
 		detect_world_changes()
-		if event.is_action_released("click"):
+		if event.is_action_released("click"): # finished an action
 			last_mouse_pos = Vector2(-1, -1)
-			if !unstored_changes.is_empty():
+			if !unstored_changes.is_empty(): # store action in action history
 				redo_stack = []
 				undo_stack.append([mode, unstored_changes])
 				unstored_changes = []
@@ -246,37 +228,45 @@ func _get_smoothed_mouse_path(last_mouse_pos: Vector2i, current_mouse_pos: Vecto
 func _draw_cells(cells) -> Array:
 	var cells_drawn = []
 	for cell in cells:
-		if cell not in current_generation:
-			set_cell(1, cell, 0, Vector2i(0, 0))
-			current_generation.append(cell)
+		if !check_is_alive(cell):
 			cells_drawn.append(cell)
-	cell_count_changed.emit(current_generation.size())
+			set_cell(1, cell, 0, Vector2i(0, 0))
+			current_generation[cell.y * get_used_rect().size.x + cell.x] = 1
+	if cells_drawn:
+		cells_alive += cells_drawn.size()
+		cell_count_changed.emit(cells_alive)
 	return cells_drawn
 
 
 func _erase_cells(cells) -> Array:
 	var cells_erased = []
 	for cell in cells:
-		if cell in current_generation:
-			erase_cell(1, cell)
-			current_generation.erase(cell)
+		if check_is_alive(cell):
 			cells_erased.append(cell)
-	cell_count_changed.emit(current_generation.size())
+			erase_cell(1, cell)
+			current_generation[cell.y * get_used_rect().size.x + cell.x] = 0
+	if cells_erased:
+		cells_alive -= cells_erased.size()
+		cell_count_changed.emit(cells_alive)
 	return cells_erased
 
 
 func _hover_cells(cells_to_hover):
 	for cell in hovered_cells:
-		if cell not in current_generation:
+		if !check_is_alive(cell):
 			if cell not in cells_to_hover:
 				erase_cell(1, cell)
 	var new_hovered_cells = []
 	for cell in cells_to_hover:
-		if cell not in current_generation:
+		if !check_is_alive(cell):
 			new_hovered_cells.append(cell)
 			if cell not in hovered_cells:
 				set_cell(1, cell, 0, Vector2(2, 0))
 	hovered_cells = new_hovered_cells
+
+
+func check_is_alive(cell):
+	return get_cell_atlas_coords(1, cell) == Vector2i(0, 0)
 
 
 func force_unhover():
@@ -317,19 +307,19 @@ func reset(reload_seed: bool=true) -> void:
 	mode = default_drawing_mode
 	gen_number = 0
 	if reload_seed:
-		current_generation = seed
 		_refresh_cells(seed)
 	else:
 		_clear_world()
-	$TickTimer.paused = false # ensure timer is not paused for the next simulation
 
 
 func _clear_world() -> void:
-	if !current_generation.is_empty():
-		redo_stack = []
-		undo_stack.append([Mode.ERASING, current_generation])
-		world_state_transitioned.emit()
-		clear_layer(1)
-		seed = []
-		current_generation = []
-		cell_count_changed.emit(0)
+	redo_stack = []
+	undo_stack.append([Mode.ERASING, get_used_cells(1)])
+	world_state_transitioned.emit()
+	clear_layer(1)
+	seed = []
+	current_generation = []
+	for n in range(get_used_rect().size.x * get_used_rect().size.y):
+		current_generation.append(0)
+	cells_alive = 0
+	cell_count_changed.emit(0)
