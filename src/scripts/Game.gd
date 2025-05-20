@@ -1,5 +1,6 @@
 extends VBoxContainer
 
+@export var settings_button: SettingsButton
 @export var pattern_menu: PatternMenu
 @export var gen_number_label: Label
 @export var cell_count_label: Label
@@ -28,6 +29,7 @@ func _ready() -> void:
 		clear_button,
 	]
 	# connect signals
+	settings_button.setting_change_requested.connect(_change_setting)
 	pen_button.pressed.connect(_enable_drawing)
 	rubber_button.pressed.connect(_enable_erasing)
 	build_button.pressed.connect(_show_builder)
@@ -39,9 +41,37 @@ func _ready() -> void:
 	world_container.mouse_exited.connect(func(): world.force_unhover())
 	world.world_state_transitioned.connect(_update_undo_redo)
 	world.cell_count_changed.connect(_update_cell_count)
-	world.tick_completed.connect(_update_gen_number)
+	world.gen_number_changed.connect(func(gen_number): gen_number_label.text = "Generation: %s" % gen_number)
 	pattern_menu.selected.connect(_select_pattern)
 	_enable_drawing()
+
+
+func _change_setting(setting_id: int, setting_state: bool):
+	if setting_id == SettingsButton.Option.GRID_ENABLED:
+		_set_grid(setting_state)
+	elif setting_id == SettingsButton.Option.DRAW_DURING_SIMULATION:
+		_set_drawing_during_sim(setting_state)
+	elif setting_id == SettingsButton.Option.CELLS_FIZZLE:
+		_set_cells_fizzle(setting_state)
+
+
+func _set_grid(enable: bool):
+	world.set_grid(enable)
+
+
+func _set_drawing_during_sim(enable: bool) -> void:
+	world.set_drawing_during_sim(enable)
+	if world.is_simulating():
+		pen_button.disabled = !enable
+		pen_button.set_state(enable)
+	if enable and pen_button in inactive_during_sim:
+		inactive_during_sim.erase(pen_button)
+	elif pen_button not in inactive_during_sim:
+		inactive_during_sim.append(pen_button)
+
+
+func _set_cells_fizzle(enable: bool) -> void:
+	world.set_cells_fizzle(enable)
 
 
 func _clear_screen() -> void:
@@ -51,16 +81,15 @@ func _clear_screen() -> void:
 
 func _stop_simulation() -> void:
 	kill_button.disabled = true
-	await world.reset()
-	_update_gen_number(0)
+	world.stop_simulation()
 	_enable_drawing()
-	simulate_button.turn_off()
+	simulate_button.set_state(false)
 
 
 func _enable_drawing() -> void:
-	rubber_button.turn_off()
-	build_button.turn_off()
-	pen_button.turn_on()
+	rubber_button.set_state(false)
+	build_button.set_state(false)
+	pen_button.set_state(true)
 	world.set_to_drawing_mode()
 	for button in inactive_during_sim:
 		button.disabled = false
@@ -68,9 +97,9 @@ func _enable_drawing() -> void:
 
 
 func _enable_erasing() -> void:
-	build_button.turn_off()
-	pen_button.turn_off()
-	rubber_button.turn_on()
+	build_button.set_state(false)
+	pen_button.set_state(false)
+	rubber_button.set_state(true)
 	world.set_to_erasing_mode()
 	
 
@@ -80,7 +109,7 @@ func _switch_simulation_state() -> void:
 		# disable all creative buttons (drawing, erasing, clearing)
 		for button in inactive_during_sim:
 			if button is ToggleableButton:
-				button.turn_off()
+				button.set_state(false)
 			button.release_focus()
 			button.disabled = true
 		world.start_simulation()
@@ -113,10 +142,6 @@ func _select_pattern(pattern_resource: Pattern) -> void:
 func _update_undo_redo() -> void:
 	undo_button.disabled = !world.can_undo()
 	redo_button.disabled = !world.can_redo()
-
-
-func _update_gen_number(gen_number) -> void:
-	gen_number_label.text = "Generation: %s" % gen_number
 
 
 func _update_cell_count(cell_count) -> void:

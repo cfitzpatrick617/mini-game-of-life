@@ -1,3 +1,6 @@
+ShaderMaterial
+CanvasItemMaterial
+Shader
 Pattern
 Resource
 Theme

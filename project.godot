@@ -39,4 +39,4 @@ switch_simulation_state={
 
 [rendering]
 
-environment/defaults/default_clear_color=Color(0.473976, 0.473976, 0.473976, 1)
+environment/defaults/default_clear_color=Color(1, 1, 1, 1)

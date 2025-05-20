@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://jc6onajpfooy"]
+[gd_scene load_steps=24 format=3 uid="uid://jc6onajpfooy"]
 
 [ext_resource type="Script" path="res://src/scripts/Game.gd" id="1_j764y"]
 [ext_resource type="PackedScene" uid="uid://ihrgq10biod1" path="res://src/scenes/World.tscn" id="2_j1cl4"]
@@ -17,6 +17,8 @@
 [ext_resource type="Texture2D" uid="uid://bvome4wbnqd7d" path="res://assets/icons/undo_icon.png" id="12_scoxh"]
 [ext_resource type="Texture2D" uid="uid://dv6tiyhxkyswp" path="res://assets/icons/pause_icon.png" id="13_ipp4o"]
 [ext_resource type="Texture2D" uid="uid://wd3v6jr3api2" path="res://assets/icons/redo_icon.png" id="13_wpj57"]
+[ext_resource type="Texture2D" uid="uid://c0sfu5w6k110n" path="res://assets/icons/settings_icon.png" id="18_dgt2d"]
+[ext_resource type="Script" path="res://src/scenes/SettingsButton.gd" id="19_5qq3f"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3vuol"]
 bg_color = Color(0, 0, 0, 1)
@@ -29,7 +31,7 @@ bg_color = Color(0.366595, 0.366595, 0.366595, 1)
 [sub_resource type="Shortcut" id="Shortcut_m1bxv"]
 events = [SubResource("InputEventKey_5iawa")]
 
-[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "undo_button", "redo_button", "clear_button", "simulate_button", "kill_button", "world_container", "world")]
+[node name="Game" type="VBoxContainer" node_paths=PackedStringArray("settings_button", "pattern_menu", "gen_number_label", "cell_count_label", "pen_button", "rubber_button", "build_button", "undo_button", "redo_button", "clear_button", "simulate_button", "kill_button", "world_container", "world")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -38,6 +40,7 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_j764y")
+settings_button = NodePath("PanelContainer/MarginContainer/SimulationTools/SettingsButton")
 pattern_menu = NodePath("Overlay/ScrollContainer/PanelContainer/MarginContainer/PatternMenu")
 gen_number_label = NodePath("PanelContainer/MarginContainer/SimulationTools/SimStats/GenNumber")
 cell_count_label = NodePath("PanelContainer/MarginContainer/SimulationTools/SimStats/CellCount")
@@ -53,9 +56,9 @@ world_container = NodePath("WorldContainer")
 world = NodePath("WorldContainer/Window/World")
 
 [node name="Overlay" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Overlay"]
+visible = false
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -89,7 +92,7 @@ stretch = true
 
 [node name="Window" type="SubViewport" parent="WorldContainer"]
 handle_input_locally = false
-size = Vector2i(1152, 515)
+size = Vector2i(2, 2)
 render_target_update_mode = 4
 
 [node name="World" parent="WorldContainer/Window" instance=ExtResource("2_j1cl4")]
@@ -189,5 +192,11 @@ text = "Generation: 0"
 [node name="CellCount" type="Label" parent="PanelContainer/MarginContainer/SimulationTools/SimStats"]
 layout_mode = 2
 text = "Cells Alive: 0"
+
+[node name="SettingsButton" type="MenuButton" parent="PanelContainer/MarginContainer/SimulationTools"]
+layout_mode = 2
+toggle_mode = false
+icon = ExtResource("18_dgt2d")
+script = ExtResource("19_5qq3f")
 
 [connection signal="focus_entered" from="WorldContainer" to="." method="_on_world_container_focus_entered"]

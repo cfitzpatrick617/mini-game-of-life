@@ -1,8 +1,9 @@
 res://src/scenes/World.tscn
 res://assets/main_theme.tres
+res://src/shaders/fizzler.gdshader
 res://src/scripts/WorldV3.gd
 res://src/scenes/Game.tscn
 res://src/scenes/PatternContainer.tscn
 res://src/scenes/PatternChoice.tscn
-res://screen_manager.tscn
+res://src/scenes/SettingsButton.gd
 res://src/scripts/Game.gd

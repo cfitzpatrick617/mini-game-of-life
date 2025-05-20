@@ -18,11 +18,9 @@ func switch_states():
 	is_on = !is_on
 
 
-func turn_on():
-	icon = image_when_on
-	is_on = true
-
-
-func turn_off():
-	icon = image_when_off
-	is_on = false
+func set_state(enable: bool):
+	if enable:
+		icon = image_when_on
+	else:
+		icon = image_when_off
+	is_on = enable

@@ -5,18 +5,19 @@ layout(local_size_x = 8, local_size_y = 1, local_size_z = 1) in;
 
 // current gen
 layout(set = 0, binding = 0) restrict readonly buffer CurrentGen{
-    int current_gen[];
+    float current_gen[];
 };
 
 // next gen
 layout(set = 1, binding = 0) restrict writeonly buffer NextGen{
-    int next_gen[];
+    float next_gen[];
 };
 
 // width and height
 layout(push_constant) uniform Parameters{
     int width;
     int height;
+    int is_wispy;
 };
 
 // The code we want to execute in each invocation
@@ -43,7 +44,11 @@ void main() {
         (cell_state == 1 && neighbours != 2 && neighbours != 3)
         || (cell_state == 0 && neighbours != 3)
     ){
-        next_gen[gl_GlobalInvocationID.x] = 0;
+        if (is_wispy == 1){
+            next_gen[gl_GlobalInvocationID.x] = clamp(cell_state - 0.2, 0, 1);
+        } else{
+            next_gen[gl_GlobalInvocationID.x] = 0;
+        }
     } else{
         next_gen[gl_GlobalInvocationID.x] = 1;
     }

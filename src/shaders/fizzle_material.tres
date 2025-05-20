@@ -1,0 +1,6 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://ckm14mrwmd311"]
+
+[ext_resource type="Shader" path="res://src/shaders/fizzler.gdshader" id="1_311ve"]
+
+[resource]
+shader = ExtResource("1_311ve")
